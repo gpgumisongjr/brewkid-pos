@@ -1262,22 +1262,31 @@
       if (msg) { msg.style.display = 'block'; msg.innerText = `Last sync: ${new Date().toLocaleTimeString()} — ${synced} synced, ${failed} failed`; }
     }
 
-    async function pullProductsFromSheets() {
-      const url = await getSetting('scriptUrl');
-      if (!url) { showToast('error', 'fa-circle-exclamation', 'No URL set — go to Settings first'); return; }
-      if (!navigator.onLine) { showToast('error', 'fa-wifi', 'No internet connection'); return; }
-      setLoading(true);
-      try {
-        const res = await fetch(`${url}?action=getProducts`);
-        const data = await res.json();
-        if (data.success && Array.isArray(data.data)) {
-          for (const p of data.data) { await dbPut('products', p); }
-          await refreshProducts();
-          showToast('success', 'fa-cloud-arrow-down', `${data.data.length} products imported`);
-        } else { showToast('error', 'fa-circle-exclamation', 'Import failed'); }
-      } catch(e) { showToast('error', 'fa-circle-exclamation', 'Could not reach server'); }
-      setLoading(false);
+async function pullProductsFromSheets() {
+  const url = await getSetting('scriptUrl');
+  if (!url) { showToast('error','fa-circle-exclamation','No URL set — go to Settings first'); return; }
+  if (!navigator.onLine) { showToast('error','fa-wifi','No internet connection'); return; }
+  setLoading(true);
+  try {
+    const res = await fetch(`${url}?action=getProducts`, {
+      method: 'GET',
+      redirect: 'follow',
+      mode: 'cors',
+    });
+    const text = await res.text();
+    const data = JSON.parse(text);
+    if (data.success && Array.isArray(data.data)) {
+      for (const p of data.data) { await dbPut('products', p); }
+      await refreshProducts();
+      showToast('success','fa-cloud-arrow-down', `${data.data.length} products imported`);
+    } else {
+      showToast('error','fa-circle-exclamation','Import failed: ' + (data.error || 'unknown'));
     }
+  } catch(e) {
+    showToast('error','fa-circle-exclamation','Error: ' + e.message);
+  }
+  setLoading(false);
+}
 
     async function updateSyncBadge() {
       const orders = await dbGetAll('orders').catch(() => []);
