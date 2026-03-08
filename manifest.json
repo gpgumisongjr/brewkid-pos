@@ -1,0 +1,18 @@
+{
+  "name": "Brew Kid POS",
+  "short_name": "BrewKid",
+  "description": "Offline Point of Sale for Brew Kid",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#FAF6F0",
+  "theme_color": "#1C0F08",
+  "orientation": "landscape-primary",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
