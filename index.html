@@ -889,12 +889,10 @@
       await dbPut('orders', order);
       await updateSyncBadge();
 
-      // Try to sync immediately if online
       if (navigator.onLine) {
         await trySyncOrder(order);
       }
 
-      // Build receipt
       const isDark = document.body.classList.contains('dark');
       const rc = isDark ? '#F0E8DC' : '#000';
       const rb = isDark ? '#5A4030' : '#000';
@@ -903,33 +901,33 @@
 
       const itemsHtml = cart.map(item => `
         <tr>
-          <td style="padding:6px 0;">
-            <div style="font-weight:800;color:${rc};">${item.name.toUpperCase()}</div>
-            <div style="font-size:9px;color:${isDark ? '#9B8A7C' : '#666'};">${item.size} • x${item.qty} @ ₱${item.price.toFixed(2)}</div>
+          <td style="padding:2px 0;">
+            <div style="font-weight:800;color:${rc};font-size:7px;">${item.name.toUpperCase()}</div>
+            <div style="font-size:6px;color:${isDark ? '#9B8A7C' : '#666'};">${item.size} • x${item.qty} @ ₱${item.price.toFixed(2)}</div>
           </td>
-          <td style="text-align:right;font-weight:800;vertical-align:top;padding:6px 0;color:${rc};">₱${(item.price * item.qty).toFixed(2)}</td>
+          <td style="text-align:right;font-weight:800;vertical-align:top;padding:2px 0;color:${rc};font-size:7px;">₱${(item.price * item.qty).toFixed(2)}</td>
         </tr>`).join('');
 
       document.getElementById('receipt-html').innerHTML = `
-        <div style="font-family:'Courier New',Courier,monospace;color:${rc};font-size:12px;background:${rbg};padding:4px;">
-          <div style="text-align:center;margin-bottom:20px;">
-            <div style="font-size:24px;font-weight:900;letter-spacing:-1px;color:${rc};">BRĘW KÎD</div>
-            <div style="font-size:10px;margin-top:4px;font-weight:800;color:${rc};">P-8 MAILAG, VALENCIA CITY</div>
-            <div style="font-size:10px;color:${rc};">TEL: 0906 184 2326</div>
-            <div style="font-size:10px;margin-top:2px;color:${rc};">FB: @KAPE.OTSO</div>
+        <div class="receipt-inner-print" style="font-family:'Courier New',Courier,monospace;color:${rc};font-size:7px;background:${rbg};padding:3px;width:100%;">
+          <div style="text-align:center;margin-bottom:6px;">
+            <div style="font-size:11px;font-weight:900;letter-spacing:-0.5px;color:${rc};">BRĘW KÎD</div>
+            <div style="font-size:6px;margin-top:2px;font-weight:800;color:${rc};">P-8 MAILAG, VALENCIA CITY</div>
+            <div style="font-size:6px;color:${rc};">TEL: 0906 184 2326</div>
+            <div style="font-size:6px;margin-top:1px;color:${rc};">FB: @KAPE.OTSO</div>
           </div>
-          <div style="border-top:1px dashed ${rb};margin-bottom:10px;"></div>
-          <div style="margin-bottom:15px;font-size:10px;color:${rc};">
+          <div style="border-top:1px dashed ${rb};margin-bottom:5px;"></div>
+          <div style="margin-bottom:5px;font-size:6px;color:${rc};line-height:1.6;">
             DATE: ${dateStr}<br>ORDER: ${orderId}<br>CUSTOMER: ${customerName}
           </div>
-          <div style="border-top:1px dashed ${rb};margin-bottom:10px;"></div>
+          <div style="border-top:1px dashed ${rb};margin-bottom:5px;"></div>
           <table style="width:100%;border-collapse:collapse;color:${rc};">${itemsHtml}</table>
-          <div style="border-top:1px dashed ${rb};margin:15px 0;"></div>
-          <div style="display:flex;justify-content:space-between;font-size:16px;font-weight:900;margin-bottom:4px;color:${rc};"><span>TOTAL:</span><span>₱${cartTotalValue.toFixed(2)}</span></div>
-          <div style="display:flex;justify-content:space-between;font-size:10px;color:${rc};"><span>CASH RECEIVED:</span><span>₱${cashTendered.toFixed(2)}</span></div>
-          <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:800;margin-top:4px;color:${isDark ? '#D4A853' : '#000'};"><span>CHANGE:</span><span>₱${(cashTendered - cartTotalValue).toFixed(2)}</span></div>
-          <div style="border-top:1px dashed ${rb};margin:20px 0 10px;"></div>
-          <div style="text-align:center;font-size:10px;font-weight:800;color:${rc};">THANK YOU FOR BREWING WITH US!<br>PLEASE COME AGAIN</div>
+          <div style="border-top:1px dashed ${rb};margin:5px 0;"></div>
+          <div style="display:flex;justify-content:space-between;font-size:9px;font-weight:900;margin-bottom:2px;color:${rc};"><span>TOTAL:</span><span>₱${cartTotalValue.toFixed(2)}</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:6px;color:${rc};"><span>CASH RECEIVED:</span><span>₱${cashTendered.toFixed(2)}</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:7px;font-weight:800;margin-top:2px;color:${isDark ? '#D4A853' : '#000'};"><span>CHANGE:</span><span>₱${(cashTendered - cartTotalValue).toFixed(2)}</span></div>
+          <div style="border-top:1px dashed ${rb};margin:6px 0 4px;"></div>
+          <div style="text-align:center;font-size:6px;font-weight:800;color:${rc};">THANK YOU FOR BREWING WITH US!<br>PLEASE COME AGAIN</div>
         </div>`;
 
       document.getElementById('modal-receipt').classList.remove('hidden');
