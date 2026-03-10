@@ -686,7 +686,8 @@
     // ═══════════════════════════════════════════════
     // ─── APP STATE ─────────────────────────────────
     // ═══════════════════════════════════════════════
-    let products = [], cart = [], currentCategory = 'All', currentImgBase64 = null, cartTotalValue = 0, searchQuery = '';
+    //let products = [], cart = [], currentCategory = 'All', currentImgBase64 = null, cartTotalValue = 0, searchQuery = '';
+    let products = [], cart = [], currentCategory = 'All', currentImgBase64 = null, cartTotalValue = 0, searchQuery = '', _lastPrintOrder = null;
     let _pendingDeleteId = null;
     let fpStart, fpEnd;
 
@@ -929,8 +930,8 @@
           <div style="border-top:1px dashed ${rb};margin:6px 0 4px;"></div>
           <div style="text-align:center;font-size:6px;font-weight:800;color:${rc};">THANK YOU FOR BREWING WITH US!<br>PLEASE COME AGAIN</div>
         </div>`;
-      _lastPrintOrder = order;
-      document.getElementById('modal-receipt').classList.remove('hidden');
+_lastPrintOrder = order;
+document.getElementById('modal-receipt').classList.remove('hidden');
       clearCart();
       showToast('success', 'fa-circle-check', 'Order saved — ' + orderId);
       setLoading(false);
@@ -1336,52 +1337,42 @@ async function pullProductsFromSheets() {
     // ─── RECEIPT / PRINT ───────────────────────────
     // ═══════════════════════════════════════════════
 function printReceipt() {
-  const cashTendered = parseFloat(document.getElementById('cash-received')?.value) || 0;
-
-  // Build plain text receipt for SmallPrter
+  if (!_lastPrintOrder) {
+    showToast('error', 'fa-circle-exclamation', 'No receipt data found');
+    return;
+  }
+  const o = _lastPrintOrder;
   const lines = [];
   lines.push('================================');
-  lines.push('           BREW KID             ');
-  lines.push('   P-8 MAILAG, VALENCIA CITY    ');
-  lines.push('      TEL: 0906 184 2326        ');
-  lines.push('        FB: @KAPE.OTSO          ');
+  lines.push('          BREW KID              ');
+  lines.push('  P-8 MAILAG, VALENCIA CITY     ');
+  lines.push('     TEL: 0906 184 2326         ');
+  lines.push('       FB: @KAPE.OTSO           ');
   lines.push('================================');
-
-  // Get receipt data from the modal
-  const receiptEl = document.getElementById('receipt-html');
-  const allText = receiptEl.innerText || '';
-
-  // Build from last order stored
-  const lastOrder = _lastPrintOrder;
-  if (lastOrder) {
-    lines.push('DATE: ' + new Date(lastOrder.timestamp).toLocaleString());
-    lines.push('ORDER: ' + lastOrder.orderId);
-    lines.push('CUSTOMER: ' + lastOrder.customer);
-    lines.push('--------------------------------');
-    lastOrder.items.forEach(item => {
-      const lineTotal = (item.price * item.qty).toFixed(2);
-      lines.push(item.name.toUpperCase());
-      lines.push(`  ${item.size} x${item.qty} @ P${item.price.toFixed(2)}   P${lineTotal}`);
-    });
-    lines.push('--------------------------------');
-    lines.push(`TOTAL:         P${lastOrder.total.toFixed(2)}`);
-    lines.push(`CASH:          P${lastOrder.cash.toFixed(2)}`);
-    lines.push(`CHANGE:        P${(lastOrder.cash - lastOrder.total).toFixed(2)}`);
-    lines.push('================================');
-    lines.push('  THANK YOU FOR BREWING WITH US!');
-    lines.push('        PLEASE COME AGAIN       ');
-    lines.push('================================');
-  }
+  lines.push('DATE: ' + new Date(o.timestamp).toLocaleString());
+  lines.push('ORDER: ' + o.orderId);
+  lines.push('CUSTOMER: ' + o.customer);
+  lines.push('--------------------------------');
+  o.items.forEach(item => {
+    lines.push(item.name.toUpperCase());
+    lines.push('  ' + item.size + ' x' + item.qty + ' @ P' + item.price.toFixed(2) + '   P' + (item.price * item.qty).toFixed(2));
+  });
+  lines.push('--------------------------------');
+  lines.push('TOTAL:         P' + o.total.toFixed(2));
+  lines.push('CASH:          P' + o.cash.toFixed(2));
+  lines.push('CHANGE:        P' + (o.cash - o.total).toFixed(2));
+  lines.push('================================');
+  lines.push('  THANK YOU FOR BREWING WITH US!');
+  lines.push('       PLEASE COME AGAIN        ');
+  lines.push('================================');
 
   const receiptText = lines.join('\n');
 
-  // Use Web Share API (works with SmallPrter on Android)
   if (navigator.share) {
     navigator.share({ text: receiptText })
       .then(() => showToast('success', 'fa-print', 'Sent to SmallPrter'))
       .catch(() => showToast('info', 'fa-print', 'Share cancelled'));
   } else {
-    // Fallback: copy to clipboard
     navigator.clipboard.writeText(receiptText)
       .then(() => showToast('info', 'fa-clipboard', 'Receipt copied — paste into SmallPrter'))
       .catch(() => showToast('error', 'fa-circle-exclamation', 'Could not share receipt'));
