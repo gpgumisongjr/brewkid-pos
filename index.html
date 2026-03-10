@@ -875,7 +875,7 @@
       const customerName = document.getElementById('customer-name').value.trim() || 'Walk-in Customer';
       const date = new Date();
       const orderId = 'ORD-' + Math.random().toString(36).substr(2, 9).toUpperCase();
-
+      let _lastPrintOrder = null; // add this at the top of your script with other let declarations
       const order = {
         orderId,
         timestamp: date.toISOString(),
@@ -929,7 +929,7 @@
           <div style="border-top:1px dashed ${rb};margin:6px 0 4px;"></div>
           <div style="text-align:center;font-size:6px;font-weight:800;color:${rc};">THANK YOU FOR BREWING WITH US!<br>PLEASE COME AGAIN</div>
         </div>`;
-
+      _lastPrintOrder = order;
       document.getElementById('modal-receipt').classList.remove('hidden');
       clearCart();
       showToast('success', 'fa-circle-check', 'Order saved — ' + orderId);
