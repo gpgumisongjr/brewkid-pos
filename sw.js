@@ -1,4 +1,4 @@
-const CACHE = 'brewkid-v4';
+const CACHE = 'brewkid-v5';
 
 const ASSETS = [
   './index.html',
