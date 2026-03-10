@@ -1336,36 +1336,57 @@ async function pullProductsFromSheets() {
     // ─── RECEIPT / PRINT ───────────────────────────
     // ═══════════════════════════════════════════════
 function printReceipt() {
-  const content = document.getElementById('receipt-html').innerHTML;
-  const win = window.open('', '_blank');
-  win.document.write(`
-    <html>
-      <head>
-        <style>
-          @page {
-            size: 40mm auto;
-            margin: 0;
-          }
-          * { box-sizing: border-box; margin: 0; padding: 0; }
-          body {
-            font-family: 'Courier New', Courier, monospace;
-            font-size: 7px;
-            width: 40mm;
-            padding: 2mm;
-            background: white;
-            color: #000;
-          }
-          table { width: 100%; border-collapse: collapse; }
-          td { padding: 1px 0; font-size: 7px; }
-          div { line-height: 1.3; }
-        </style>
-      </head>
-      <body>${content}</body>
-    </html>`);
-  win.document.close();
-  setTimeout(() => { win.print(); win.close(); }, 500);
-}
+  const cashTendered = parseFloat(document.getElementById('cash-received')?.value) || 0;
 
+  // Build plain text receipt for SmallPrter
+  const lines = [];
+  lines.push('================================');
+  lines.push('           BREW KID             ');
+  lines.push('   P-8 MAILAG, VALENCIA CITY    ');
+  lines.push('      TEL: 0906 184 2326        ');
+  lines.push('        FB: @KAPE.OTSO          ');
+  lines.push('================================');
+
+  // Get receipt data from the modal
+  const receiptEl = document.getElementById('receipt-html');
+  const allText = receiptEl.innerText || '';
+
+  // Build from last order stored
+  const lastOrder = _lastPrintOrder;
+  if (lastOrder) {
+    lines.push('DATE: ' + new Date(lastOrder.timestamp).toLocaleString());
+    lines.push('ORDER: ' + lastOrder.orderId);
+    lines.push('CUSTOMER: ' + lastOrder.customer);
+    lines.push('--------------------------------');
+    lastOrder.items.forEach(item => {
+      const lineTotal = (item.price * item.qty).toFixed(2);
+      lines.push(item.name.toUpperCase());
+      lines.push(`  ${item.size} x${item.qty} @ P${item.price.toFixed(2)}   P${lineTotal}`);
+    });
+    lines.push('--------------------------------');
+    lines.push(`TOTAL:         P${lastOrder.total.toFixed(2)}`);
+    lines.push(`CASH:          P${lastOrder.cash.toFixed(2)}`);
+    lines.push(`CHANGE:        P${(lastOrder.cash - lastOrder.total).toFixed(2)}`);
+    lines.push('================================');
+    lines.push('  THANK YOU FOR BREWING WITH US!');
+    lines.push('        PLEASE COME AGAIN       ');
+    lines.push('================================');
+  }
+
+  const receiptText = lines.join('\n');
+
+  // Use Web Share API (works with SmallPrter on Android)
+  if (navigator.share) {
+    navigator.share({ text: receiptText })
+      .then(() => showToast('success', 'fa-print', 'Sent to SmallPrter'))
+      .catch(() => showToast('info', 'fa-print', 'Share cancelled'));
+  } else {
+    // Fallback: copy to clipboard
+    navigator.clipboard.writeText(receiptText)
+      .then(() => showToast('info', 'fa-clipboard', 'Receipt copied — paste into SmallPrter'))
+      .catch(() => showToast('error', 'fa-circle-exclamation', 'Could not share receipt'));
+  }
+}
     // ═══════════════════════════════════════════════
     // ─── DARK MODE ─────────────────────────────────
     // ═══════════════════════════════════════════════
