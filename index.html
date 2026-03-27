@@ -450,7 +450,6 @@
     async function setSetting(key,value) { await dbPut('settings',{key,value}); }
 
     // ── APP STATE ──────────────────────────────────
-    // ✅ _lastPrintOrder is GLOBAL — never declare with 'let' inside checkout()
     let products=[], cart=[], currentCategory='All', currentImgBase64=null,
         cartTotalValue=0, searchQuery='', _lastPrintOrder=null;
     let _pendingDeleteId=null;
@@ -627,7 +626,6 @@
       const date = new Date();
       const orderId = 'ORD-'+Math.random().toString(36).substr(2,9).toUpperCase();
 
-      // ✅ Assigns to GLOBAL _lastPrintOrder — no 'let' keyword here
       const order = {
         orderId,
         timestamp: date.toISOString(),
@@ -677,7 +675,6 @@
           <div style="text-align:center;font-size:6px;font-weight:800;color:${rc};">THANK YOU FOR BREWING WITH US!<br>PLEASE COME AGAIN</div>
         </div>`;
 
-      // ✅ Store order in global so printReceipt() can access it
       _lastPrintOrder = order;
 
       document.getElementById('modal-receipt').classList.remove('hidden');
@@ -977,48 +974,107 @@
       updateConn();
     }
 
-    // ── PRINT / SMALLPRTER ─────────────────────────
+    // ── PRINT RECEIPT (direct browser print) ───────
     function printReceipt() {
-      // ✅ Reads global _lastPrintOrder set in checkout()
       if (!_lastPrintOrder) {
         showToast('error','fa-circle-exclamation','No receipt data found');
         return;
       }
       const o = _lastPrintOrder;
-      const lines = [];
-      lines.push('================================');
-      lines.push('          BREW KID              ');
-      lines.push('  P-8 MAILAG, VALENCIA CITY     ');
-      lines.push('     TEL: 0906 184 2326         ');
-      lines.push('       FB: @KAPE.OTSO           ');
-      lines.push('================================');
-      lines.push('DATE: '+new Date(o.timestamp).toLocaleString());
-      lines.push('ORDER: '+o.orderId);
-      lines.push('CUSTOMER: '+o.customer);
-      lines.push('--------------------------------');
-      o.items.forEach(item => {
-        lines.push(item.name.toUpperCase());
-        lines.push('  '+item.size+' x'+item.qty+' @ P'+item.price.toFixed(2)+'   P'+(item.price*item.qty).toFixed(2));
-      });
-      lines.push('--------------------------------');
-      lines.push('TOTAL:         P'+o.total.toFixed(2));
-      lines.push('CASH:          P'+o.cash.toFixed(2));
-      lines.push('CHANGE:        P'+(o.cash-o.total).toFixed(2));
-      lines.push('================================');
-      lines.push('  THANK YOU FOR BREWING WITH US!');
-      lines.push('       PLEASE COME AGAIN        ');
-      lines.push('================================');
+      const dateStr = new Date(o.timestamp).toLocaleString();
 
-      const receiptText = lines.join('\n');
-      if (navigator.share) {
-        navigator.share({text:receiptText})
-          .then(()=>showToast('success','fa-print','Sent to SmallPrter'))
-          .catch(()=>showToast('info','fa-print','Share cancelled'));
-      } else {
-        navigator.clipboard.writeText(receiptText)
-          .then(()=>showToast('info','fa-clipboard','Receipt copied — paste into SmallPrter'))
-          .catch(()=>showToast('error','fa-circle-exclamation','Could not share receipt'));
+      const itemRows = o.items.map(item => `
+        <tr>
+          <td style="padding:3px 0;vertical-align:top;">
+            <div style="font-weight:bold;font-size:10px;">${item.name.toUpperCase()}</div>
+            <div style="font-size:9px;color:#555;">${item.size} &bull; x${item.qty} @ &#8369;${item.price.toFixed(2)}</div>
+          </td>
+          <td style="text-align:right;font-weight:bold;font-size:10px;vertical-align:top;padding:3px 0;">
+            &#8369;${(item.price * item.qty).toFixed(2)}
+          </td>
+        </tr>`).join('');
+
+      const receiptHTML = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Receipt - ${o.orderId}</title>
+  <style>
+    @page {
+      size: 80mm auto;
+      margin: 4mm 4mm;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 10px;
+      color: #000;
+      width: 72mm;
+      background: #fff;
+    }
+    .center { text-align: center; }
+    .bold { font-weight: bold; }
+    .divider { border-top: 1px dashed #000; margin: 6px 0; }
+    .shop-name { font-size: 16px; font-weight: 900; letter-spacing: -0.5px; }
+    .meta { font-size: 9px; line-height: 1.7; margin-bottom: 4px; }
+    table { width: 100%; border-collapse: collapse; }
+    .totals td { font-size: 10px; padding: 2px 0; }
+    .totals .total-row td { font-size: 13px; font-weight: 900; padding-top: 4px; }
+    .totals .change-row td { font-size: 11px; font-weight: bold; }
+    .footer { text-align: center; font-size: 9px; font-weight: bold; line-height: 1.8; margin-top: 4px; }
+  </style>
+</head>
+<body>
+  <div class="center" style="margin-bottom:6px;">
+    <div class="shop-name">BR&#280;W K&#206;D</div>
+    <div style="font-size:9px;font-weight:bold;">P-8 MAILAG, VALENCIA CITY</div>
+    <div style="font-size:9px;">TEL: 0906 184 2326</div>
+    <div style="font-size:9px;">FB: @KAPE.OTSO</div>
+  </div>
+  <div class="divider"></div>
+  <div class="meta">
+    DATE: ${dateStr}<br>
+    ORDER: ${o.orderId}<br>
+    CUSTOMER: ${o.customer}
+  </div>
+  <div class="divider"></div>
+  <table>${itemRows}</table>
+  <div class="divider"></div>
+  <table class="totals">
+    <tr class="total-row">
+      <td class="bold">TOTAL</td>
+      <td style="text-align:right;" class="bold">&#8369;${o.total.toFixed(2)}</td>
+    </tr>
+    <tr>
+      <td>CASH RECEIVED</td>
+      <td style="text-align:right;">&#8369;${o.cash.toFixed(2)}</td>
+    </tr>
+    <tr class="change-row">
+      <td>CHANGE</td>
+      <td style="text-align:right;">&#8369;${(o.cash - o.total).toFixed(2)}</td>
+    </tr>
+  </table>
+  <div class="divider"></div>
+  <div class="footer">
+    THANK YOU FOR BREWING WITH US!<br>
+    PLEASE COME AGAIN
+  </div>
+  <script>
+    window.onload = function() {
+      window.print();
+      window.onafterprint = function() { window.close(); };
+    };
+  <\/script>
+</body>
+</html>`;
+
+      const printWin = window.open('', '_blank', 'width=320,height=600,scrollbars=no,toolbar=no,menubar=no');
+      if (!printWin) {
+        showToast('error', 'fa-circle-exclamation', 'Pop-up blocked — please allow pop-ups for this site');
+        return;
       }
+      printWin.document.write(receiptHTML);
+      printWin.document.close();
     }
 
     // ── DARK MODE ──────────────────────────────────
