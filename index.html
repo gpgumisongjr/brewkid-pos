@@ -677,6 +677,11 @@
 
       _lastPrintOrder = order;
 
+// 🔥 AUTO PRINT AFTER CHECKOUT
+setTimeout(() => {
+  printReceipt();
+}, 400);
+
       document.getElementById('modal-receipt').classList.remove('hidden');
       clearCart();
       showToast('success','fa-circle-check','Order saved — '+orderId);
@@ -975,107 +980,69 @@
     }
 
     // ── PRINT RECEIPT (direct browser print) ───────
-    function printReceipt() {
-      if (!_lastPrintOrder) {
-        showToast('error','fa-circle-exclamation','No receipt data found');
-        return;
-      }
-      const o = _lastPrintOrder;
-      const dateStr = new Date(o.timestamp).toLocaleString();
+    <script>
+function printReceipt() {
+  if (!_lastPrintOrder) {
+    showToast('error','fa-circle-exclamation','No receipt data found');
+    return;
+  }
 
-      const itemRows = o.items.map(item => `
-        <tr>
-          <td style="padding:3px 0;vertical-align:top;">
-            <div style="font-weight:bold;font-size:10px;">${item.name.toUpperCase()}</div>
-            <div style="font-size:9px;color:#555;">${item.size} &bull; x${item.qty} @ &#8369;${item.price.toFixed(2)}</div>
-          </td>
-          <td style="text-align:right;font-weight:bold;font-size:10px;vertical-align:top;padding:3px 0;">
-            &#8369;${(item.price * item.qty).toFixed(2)}
-          </td>
-        </tr>`).join('');
+  const o = _lastPrintOrder;
+  const dateStr = new Date(o.timestamp).toLocaleString();
 
-      const receiptHTML = `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <title>Receipt - ${o.orderId}</title>
-  <style>
-    @page {
-      size: 80mm auto;
-      margin: 4mm 4mm;
-    }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: 'Courier New', Courier, monospace;
-      font-size: 10px;
-      color: #000;
-      width: 72mm;
-      background: #fff;
-    }
-    .center { text-align: center; }
-    .bold { font-weight: bold; }
-    .divider { border-top: 1px dashed #000; margin: 6px 0; }
-    .shop-name { font-size: 16px; font-weight: 900; letter-spacing: -0.5px; }
-    .meta { font-size: 9px; line-height: 1.7; margin-bottom: 4px; }
-    table { width: 100%; border-collapse: collapse; }
-    .totals td { font-size: 10px; padding: 2px 0; }
-    .totals .total-row td { font-size: 13px; font-weight: 900; padding-top: 4px; }
-    .totals .change-row td { font-size: 11px; font-weight: bold; }
-    .footer { text-align: center; font-size: 9px; font-weight: bold; line-height: 1.8; margin-top: 4px; }
-  </style>
-</head>
-<body>
-  <div class="center" style="margin-bottom:6px;">
-    <div class="shop-name">BR&#280;W K&#206;D</div>
-    <div style="font-size:9px;font-weight:bold;">P-8 MAILAG, VALENCIA CITY</div>
-    <div style="font-size:9px;">TEL: 0906 184 2326</div>
-    <div style="font-size:9px;">FB: @KAPE.OTSO</div>
-  </div>
-  <div class="divider"></div>
-  <div class="meta">
-    DATE: ${dateStr}<br>
-    ORDER: ${o.orderId}<br>
-    CUSTOMER: ${o.customer}
-  </div>
-  <div class="divider"></div>
-  <table>${itemRows}</table>
-  <div class="divider"></div>
-  <table class="totals">
-    <tr class="total-row">
-      <td class="bold">TOTAL</td>
-      <td style="text-align:right;" class="bold">&#8369;${o.total.toFixed(2)}</td>
-    </tr>
-    <tr>
-      <td>CASH RECEIVED</td>
-      <td style="text-align:right;">&#8369;${o.cash.toFixed(2)}</td>
-    </tr>
-    <tr class="change-row">
-      <td>CHANGE</td>
-      <td style="text-align:right;">&#8369;${(o.cash - o.total).toFixed(2)}</td>
-    </tr>
-  </table>
-  <div class="divider"></div>
-  <div class="footer">
-    THANK YOU FOR BREWING WITH US!<br>
-    PLEASE COME AGAIN
-  </div>
-  <script>
-    window.onload = function() {
-      window.print();
-      window.onafterprint = function() { window.close(); };
-    };
-  <\/script>
-</body>
-</html>`;
+  let text = "";
 
-      const printWin = window.open('', '_blank', 'width=320,height=600,scrollbars=no,toolbar=no,menubar=no');
-      if (!printWin) {
-        showToast('error', 'fa-circle-exclamation', 'Pop-up blocked — please allow pop-ups for this site');
-        return;
-      }
-      printWin.document.write(receiptHTML);
-      printWin.document.close();
-    }
+  // Initialize printer
+  text += "\x1B\x40";
+
+  // Center align
+  text += "\x1B\x61\x01";
+  text += "BREW KID\n";
+  text += "P-8 MAILAG, VALENCIA CITY\n";
+  text += "TEL: 0906 184 2326\n";
+  text += "FB: @KAPE.OTSO\n";
+  text += "------------------------------\n";
+
+  // Left align
+  text += "\x1B\x61\x00";
+  text += "DATE: " + dateStr + "\n";
+  text += "ORDER: " + o.orderId + "\n";
+  text += "CUSTOMER: " + o.customer + "\n";
+  text += "------------------------------\n";
+
+  // ITEMS
+  o.items.forEach(item => {
+    let name = (item.name + " " + item.size).substring(0, 24);
+    let total = (item.price * item.qty).toFixed(2);
+
+    text += name + "\n";
+    text += item.qty + " x " + item.price.toFixed(2) + "   ₱" + total + "\n";
+  });
+
+  text += "------------------------------\n";
+
+  // TOTALS
+  text += "TOTAL : ₱" + o.total.toFixed(2) + "\n";
+  text += "CASH  : ₱" + o.cash.toFixed(2) + "\n";
+  text += "CHANGE: ₱" + (o.cash - o.total).toFixed(2) + "\n";
+
+  text += "------------------------------\n";
+
+  // Footer center
+  text += "\x1B\x61\x01";
+  text += "THANK YOU!\n";
+  text += "PLEASE COME AGAIN\n\n\n";
+
+  // Cut paper
+  text += "\x1D\x56\x41\x10";
+
+  // Convert to base64
+  let base64 = btoa(unescape(encodeURIComponent(text)));
+
+  // Send to RawBT
+  window.location.href = "rawbt:base64," + base64;
+}
+</script>
 
     // ── DARK MODE ──────────────────────────────────
     function toggleDarkMode() {
