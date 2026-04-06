@@ -980,7 +980,6 @@ setTimeout(() => {
     }
 
     // ── PRINT RECEIPT (direct browser print) ───────
-    <script>
 function printReceipt() {
   if (!_lastPrintOrder) {
     showToast('error','fa-circle-exclamation','No receipt data found');
@@ -1042,8 +1041,6 @@ function printReceipt() {
   // Send to RawBT
   window.location.href = "rawbt:base64," + base64;
 }
-</script>
-
     // ── DARK MODE ──────────────────────────────────
     function toggleDarkMode() {
       const isDark=document.body.classList.toggle('dark');
